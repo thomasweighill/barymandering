@@ -1,0 +1,1 @@
+This folder is where plots of subsamples are stored for the clustering experiment. These plots are used only for the figure explaining the experiment structure.
