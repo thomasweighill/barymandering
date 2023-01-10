@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[4]:
+
+
 import numpy as np
 import matplotlib
 #matplotlib.use('Agg')
@@ -61,7 +67,7 @@ def generate_data(model = 'gaussians',
         
         X, y = datasets.make_blobs(n_samples=num_points,random_state = random_state)
         
-        transformation = [[0.06, -0.06], [-0.04, 0.08]]
+        transformation = [[0.6*2, -0.6*2], [-0.4*2, 0.8*2]]
         
         aniso = np.dot(X, transformation)
 
@@ -81,15 +87,11 @@ def generate_data(model = 'gaussians',
             
         data.extend(noise)
         
-        
-    data =   np.array(data, dtype=np.float32)
-    data = data - [data[:,0].min(), data[:,1].min()]
-    data = data/data[:,0].max()
     return np.array(data, dtype=np.float32)
-
 
 methods = ['kMeans','spectral','agglomerative_ward','agglomerative_single']
 methodnames = ['k-means', 'spectral', 'ward agglom.', 'single linkage']
+
 models = ['gaussians','circles','moons','aniso','square' ]
 colors = [
         [0.8,0.392156862745098,0.325490196078431],
@@ -130,6 +132,27 @@ for mod, model in enumerate(models):
     for i in range(N):
         choices = np.random.choice(range(len(all_data)), size=int(num_points/N), replace=False)
         data_sets.append([all_data[j] for j in choices])    
+        fig, ax =plt.subplots(figsize=(5,5))
+        data = data_sets[-1]
+        ax.scatter(
+            [x[0] for x in data],
+            [x[1] for x in data],
+            c='black',
+            s=2
+        )
+        ax.set_aspect(1)
+        ax.set_xticks([])
+        ax.set_xlim(
+            -0.1+min(x[0] for x in all_data),
+            +0.1+max(x[0] for x in all_data)
+        )
+        ax.set_yticks([])
+        ax.set_ylim(-1.2,2.2)
+        ax.set_ylim(
+            -0.1+min(x[1] for x in all_data),
+            +0.1+max(x[1] for x in all_data)
+        )
+        fig.savefig('detail_plots/subsample_{}_{}_{}.png'.format(i, model, add_outliers), bbox_inches = 'tight', dpi=150)
     
     #plot all data together
     fig, ax =plt.subplots(figsize=(5,5))
@@ -152,10 +175,6 @@ for mod, model in enumerate(models):
         -0.1+min(x[1] for x in all_data),
         +0.1+max(x[1] for x in all_data)
     )
-    if model == 'square':
-        ax.set_xticks([0.25,0.5,0.75])
-        ax.set_xticklabels([0.25,0.5,0.75])
-        ax.tick_params(axis='x', labelsize=20)
     fig.savefig('sample_{}_{}.png'.format(model, add_outliers), bbox_inches = 'tight', dpi=150)
 
     #Compute barycenters
@@ -175,6 +194,30 @@ for mod, model in enumerate(models):
 
             partitions = [[np.array([x for j, x in enumerate(data_sets[i]) if clustered[i].labels_[j] == k]) 
                            for k in range(K)] for i in range(len(data_sets))]
+            
+            for i, p in enumerate(partitions):
+                fig, ax = plt.subplots(figsize=(5,5))
+                B = p
+                for b in B:
+                    plt.scatter(
+                        [x[0] for x in b],
+                        [x[1] for x in b],
+                        s=20
+                    )  
+                ax.set_aspect(1)
+                ax.set_xticks([])
+                ax.set_xlim(
+                    -0.1+min(x[0] for x in all_data),
+                    +0.1+max(x[0] for x in all_data)
+                )
+                ax.set_yticks([])
+                ax.set_ylim(-1.2,2.2)
+                ax.set_ylim(
+                    -0.1+min(x[1] for x in all_data),
+                    +0.1+max(x[1] for x in all_data)
+                )
+                fig.savefig('detail_plots/clustered_{}_{}_{}.png'.format(i, model, add_outliers), bbox_inches = 'tight', dpi=150)
+                plt.close(fig)
             
             barycenter_seed = []
             for i in range(K):
@@ -201,7 +244,7 @@ for mod, model in enumerate(models):
 
             partitions = [[np.array([x for j, x in enumerate(data_sets[i]) if clustered[i].labels_[j] == k]) 
                            for k in range(K)] for i in range(len(data_sets))]
-            
+                     
             barycenter_seed = []
             for i in range(K):
                 choices = np.random.choice(range(len(partitions[0][i])), size=M, replace=True)
@@ -233,6 +276,7 @@ for mod, model in enumerate(models):
                 barycenter_seed.append(
                     [partitions[0][i][j] for j in choices]
                 )
+            plt.show()
 
             B, I = higher_bary.find_barycenter(
                 partitions,
@@ -258,6 +302,16 @@ for mod, model in enumerate(models):
                 barycenter_seed.append(
                     [partitions[0][i][j] for j in choices]
                 )
+                
+            if model=='moons':
+                for P in partitions:
+                    fig2, ax2 = plt.subplots()
+                    for PP in P:
+                        ax2.scatter(
+                            [p[0] for p in PP],
+                            [p[1] for p in PP]
+                        )
+            plt.show()
 
             B, I = higher_bary.find_barycenter(
                 partitions,
@@ -292,9 +346,6 @@ for mod, model in enumerate(models):
             -0.1+min(x[1] for x in all_data),
             +0.1+max(x[1] for x in all_data)
         )
-        if model == 'square':
-            ax.set_xticks([0.25,0.5,0.75])
-            ax.tick_params(axis='x', labelsize=20)
         fig.savefig('bary_{}_{}_{}.png'.format(model, add_outliers, method), bbox_inches = 'tight', dpi=150)
         plt.close(fig)
         
@@ -304,37 +355,32 @@ for mod, model in enumerate(models):
             _, d = higher_bary.match_to_mean(all_partitions[method][j], 
                                              barycenters[method], 
                                              higher_bary.planar_discrete_distance_weighted)        
-            dists[method].append(d)
-            
-    width=0.95
-    medianprops = dict(color='black')
-    boxfig, boxax = plt.subplots(figsize=(5,5))
-    boxprops = dict(linestyle='--', linewidth=2, color='black')
-    bplot = boxax.boxplot(
-        [dists[m] for m in methods],
-        positions=[width/2-(m+0.5)*width/len(methods) for m in range(len(methods))],
-        patch_artist=True,
-        widths = width/len(methods),
-        vert = False,
-        showfliers=False,  
-        medianprops=medianprops
-    )   
-    
+            dists[method].append(d)     
         
-    for i, (patch, color) in enumerate(zip(bplot['boxes'], colors)):
-        patch.set_facecolor(color)   
-    for i, (patch, color) in enumerate(zip(bplot['boxes'], colors)):
-        patch.set_edgecolor(color) 
-    if model == 'gaussians':
+    width=0.8
+    fig, ax = plt.subplots(figsize=(3,3))
+    variances = [np.mean([d**2 for d in dists[m]]) for m in methods]
+    barplot = ax.barh(
+        [3,2,1,0],
+        variances,
+        height = width,
+        color=colors
+    ) 
+    ax.set_yticks([])
+    if mod == 0:
         handles = [mpatches.Patch(color=colors[m], label=method) for m, method in enumerate(methodnames)]
-        boxax.legend(handles=handles, loc='upper right',fontsize='xx-large')
-    if model == 'square':
-        boxax.set_xticks([0.25,0.5,0.75])
-        boxax.tick_params(axis='x', labelsize=20)
-    else:
-        boxax.set_xticks([])
-    boxax.set_xlim(0,0.9)
-    boxax.set_yticklabels([])
-    boxax.set_ylim(-0.5, 0.5)
-    boxfig.savefig('distortions_{}.png'.format(model), bbox_inches = 'tight', dpi=150)       
+        ax.legend(handles=handles, loc='upper right')
+    fig.savefig('variances_{}_flipped.png'.format(model), bbox_inches = 'tight', dpi=150)
+    plt.close(fig)
+    print(model)
+    print(
+        [methodnames[i] for i in sorted(range(len(methodnames)), key=lambda x: variances[x])]
+    )
     
+
+
+# In[ ]:
+
+
+
+
